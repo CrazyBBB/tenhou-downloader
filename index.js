@@ -1,33 +1,48 @@
 const request = require('request');
 const fs = require('fs');
 const zlib = require('zlib');
-const mongodb = require('mongodb');
+const mongoose = require('mongoose');
 
-const playerName = 'お知らせ';
-const playerNameRegex = new RegExp(playerName);
+const {Info} = require('./model');
 
-// const urlPrefix = "http://tenhou.net/0/log/?";
-// const filePostfix1 = '&tw='
-// const filePostfix2 = '.mjlog';
+mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://localhost/tenhou');
 
-// const gzip = zlib.createGzip();
-// const outfile = fs.createWriteStream("./mjlog/" + id + filePostfix1 + '1' + filePostfix2);
+const heroName = 'CrazyZZZ';
+const heroNameRegex = new RegExp(heroName);
 
-// request(urlPrefix + id).pipe(gzip).pipe(outfile);
+const urlPrefix = "http://tenhou.net/0/log/?";
+const filePostfix1 = '&tw='
+const filePostfix2 = '.mjlog';
 
-mongodb.MongoClient.connect('mongodb://localhost:27017/tenhou', function(err, db) {
-  exec(db);
+Info.find({tenhou_ids: heroNameRegex}, function(err, infos) {
+  download(infos, 0);
 });
 
-const exec = function(db) {
-    const col = db.collection('info');
-    col.find({tenhou_ids: playerNameRegex}, function(err, infos) {
-      infos.each(function(err, info) {
-        if (info) console.log(info.tenhou_ids);
-      });
-    });
-    db.close();
-}
+const download = function(infos, idx) {
+  const players = JSON.parse(infos[idx].tenhou_ids);
+
+  // TODO 順位になってしまってる XMLの中身を見て何家か調べる必要あり
+  let position;
+  for (position = 0; position < 3; position++) {
+    if (heroName === players[position]) break;
+  }
+
+  const gzip = zlib.createGzip();
+  const path = "./mjlog/" + infos[idx].mjlog + filePostfix1 + position + filePostfix2
+  const outfile = fs.createWriteStream(path);
+
+  request(urlPrefix + infos[idx].mjlog).pipe(gzip).pipe(outfile);
+  console.log('download: ' + path);
+
+  if (idx === infos.length - 1) {
+    mongoose.disconnect();
+  } else {
+    setTimeout(function() {
+      download(infos, idx + 1);
+    }, 2000);
+  }
+};
 
 
 

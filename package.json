@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/CrazyBBB/tenhou-downloader#readme",
   "dependencies": {
-    "mongodb": "^2.2.29",
+    "mongoose": "^4.10.7",
     "request": "^2.81.0"
   }
 }

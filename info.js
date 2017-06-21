@@ -1,7 +1,12 @@
 const fs = require('fs');
 const readline = require('readline');
-const mongodb = require('mongodb');
+const mongoose = require('mongoose');
+
 const {DateStrIterator} = require('./date-utils');
+const {Info} = require('./model');
+
+mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://localhost/tenhou');
 
 const startDateStr = process.argv[2];
 const endDateStr   = process.argv[3];
@@ -13,13 +18,8 @@ const regexForURL = /log=([^"]+)/;
 
 const iterator = new DateStrIterator(startDateStr);
 
-mongodb.MongoClient.connect('mongodb://localhost:27017/tenhou', function(err, db) {
-  insert(db);
-});
-
-const insert = function(db) {
+(function insert() {
     const dateStr = iterator.nextStr();
-    const col = db.collection('info');
     const readlineInterface = readline.createInterface({
         input: fs.createReadStream(pathPrefix + dateStr + pathPostfix),
         output: null
@@ -34,24 +34,27 @@ const insert = function(db) {
             const date = new Date(year + '/' + month + '/' + day
                                     + ' ' + arr[0]);
             const match = arr[4].match(regexForIdRate);
-            const info = {
+            const info = new Info({
                 date: date,
                 taku: arr[2].replace(/－/g, ''),
                 tenhou_ids: JSON.stringify([match[1], match[3], match[5]]),
                 scores: JSON.stringify([match[2], match[4], match[6]]),
                 time: parseInt(arr[1]),
                 mjlog: arr[3].match(regexForURL)[1]
-            };
-            col.insertOne(info);
+            });
+            info.save(function(err) {
+                if (err) throw err;
+            });
         }
     });
 
     readlineInterface.on('close', function() {
-        console.log('import: ' + pathPrefix + dateStr + pathPostfix)
-        if (dateStr === endDateStr) {
-            db.close();
+        console.log('import: ' + pathPrefix + dateStr + pathPostfix);
+        if (dateStr !== endDateStr) {
+            insert();
         } else {
-            insert(db);
+            mongoose.disconnect();
         }
     });
-}
+})();
+
