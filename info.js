@@ -3,9 +3,10 @@ const readline = require('readline');
 const mongodb = require('mongodb');
 const {DateStrIterator} = require('./date-utils');
 
+const startDateStr = process.argv[2];
+const endDateStr   = process.argv[3];
+
 const pathPrefix = './html/scc'
-const startDateStr = '20170101';
-const endDateStr   = '20170611';
 const pathPostfix = '.html';
 const regexForIdRate = /(.+)\((.+)\) (.+)\((.+)\) (.+)\((.+)\)<br>/;
 const regexForURL = /log=([^"]+)/;

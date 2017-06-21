@@ -1,8 +1,8 @@
 const download = require('./download');
 const {DateStrIterator} = require('./date-utils');
 
-const startDateStr = '20170101';
-const endDateStr   = '20170611';
+const startDateStr = process.argv[2];
+const endDateStr   = process.argv[3];
 
 const d = new DateStrIterator(startDateStr);
 const urlPrefix   = 'http://tenhou.net/sc/raw/dat/2017/scc';
