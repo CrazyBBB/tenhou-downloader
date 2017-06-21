@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/CrazyBBB/tenhou-downloader/issues"
   },
-  "homepage": "https://github.com/CrazyBBB/tenhou-downloader#readme"
+  "homepage": "https://github.com/CrazyBBB/tenhou-downloader#readme",
+  "dependencies": {
+    "mongodb": "^2.2.29"
+  }
 }
