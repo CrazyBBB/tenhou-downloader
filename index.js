@@ -3,6 +3,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const mongoose = require('mongoose');
 
+const {Readable} = require('stream');
 const {Info} = require('./model');
 
 mongoose.Promise = global.Promise;
@@ -10,6 +11,9 @@ mongoose.connect('mongodb://localhost/tenhou');
 
 const heroName = 'CrazyZZZ';
 const heroNameRegex = new RegExp(heroName);
+
+const playerRegex = /n\d="[^"]+"/g;
+const positionRegex = /n(\d)="([^"]+)"/;
 
 const urlPrefix = "http://tenhou.net/0/log/?";
 const filePostfix1 = '&tw='
@@ -20,20 +24,28 @@ Info.find({tenhou_ids: heroNameRegex}, function(err, infos) {
 });
 
 const download = function(infos, idx) {
-  const players = JSON.parse(infos[idx].tenhou_ids);
+  request(urlPrefix + infos[idx].mjlog, function(err, res, data) {
+    let position;
+    data.match(playerRegex).forEach(function(xml) {
+      const positionMatch = xml.match(positionRegex);
+      if (heroName === decodeURI(positionMatch[2])) {
+        position = positionMatch[1];
+      }
+    });
 
-  // TODO 順位になってしまってる XMLの中身を見て何家か調べる必要あり
-  let position;
-  for (position = 0; position < 3; position++) {
-    if (heroName === players[position]) break;
-  }
+    if (position) {
+      const gzip = zlib.createGzip();
+      const path = "./mjlog/" + infos[idx].mjlog + filePostfix1 + position + filePostfix2
+      const outfile = fs.createWriteStream(path);
 
-  const gzip = zlib.createGzip();
-  const path = "./mjlog/" + infos[idx].mjlog + filePostfix1 + position + filePostfix2
-  const outfile = fs.createWriteStream(path);
+      const stream = new Readable();
+      stream.push(data);
+      stream.push(null);
 
-  request(urlPrefix + infos[idx].mjlog).pipe(gzip).pipe(outfile);
-  console.log('download: ' + path);
+      stream.pipe(gzip).pipe(outfile);
+      console.log('download: ' + path);
+    }
+  });
 
   if (idx === infos.length - 1) {
     mongoose.disconnect();
