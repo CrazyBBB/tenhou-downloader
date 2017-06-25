@@ -2,3 +2,4 @@ html/
 .DS_Store
 mjlog/
 dist/
+src/oldjs
